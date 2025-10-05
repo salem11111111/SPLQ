@@ -1,4 +1,5 @@
 **.lock files**, any dest
+Searches Sysmon logs from the last 24 hours for .lock files, extracts the Windows username from the file path, and displays details about when and where those files were seen, along with the process and host information.
   ```
   index=sysmon file_name="*.lock" earliest=-24h latest=now | rex field=file_path "C:\\\\Users\\\\(?<user>[^\\\\]+)\\\\"
   | table _time file_name file_path host process_exec app Computer user
