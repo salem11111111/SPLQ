@@ -48,11 +48,13 @@ This Splunk query searches across all indexes (index=*) for events from the last
   ```
 
 **Check malicious IP traffic through firewall**
+This Splunk query searches in the firewall index (index=firewall) for log events where the src field is empty (src=""). The src field normally contains the source IP address of network traffic, so filtering for empty values means this query is looking for firewall logs where the source IP address is missing. This could point to unusual or incomplete logs, possible misconfigurations, or specific network events where the source was not recorded. Because there is no additional filtering or formatting here, the query will return all matching events in raw form so you can inspect them directly.
   ```
   index=firewall src=""
   ```
 
 **Inactive Index Detected - Rule**
+This Splunk query searches for log events in a specific index, but here the index name is empty (index=""). In Splunk, an index is like a folder or database that stores specific types of log data, and you normally specify its name so Splunk knows where to search. Leaving it empty means the query is incomplete — Splunk won’t know which index to search unless a default index is set in your system. Without a valid index name or additional filters, this query won’t return meaningful results. Essentially, this is like telling someone “look in a folder” without saying which folder.
 ```
 index=""
 ```
