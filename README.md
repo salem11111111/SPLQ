@@ -1,22 +1,24 @@
 Failed Actions from Internal Network (IPs starting with 10)"
 
 This Splunk query searches across all indexes for events where the action resulted in failure (action=failure) and the source IP address (src) begins with 10, which typically represents an internal/private network range. The query helps identify failed login attempts or other failed actions originating from within your network. By filtering on src="10*", it focuses only on relevant internal traffic, making it useful for spotting potential issues such as misconfigurations, brute-force attempts, or unusual activity within your organization’s private IP space.
+ ```
 index=* action=failure src="10*"
-
+ ```
+  ```
 index=* action=failure src="10*"
 | table _time src dest user action
 | sort -_time
-
+ ```
 
 
 "Failed Actions from Internal Network in Firewall Logs"
 This Splunk query searches the mfirewall index for events where the action resulted in failure (action=failure) and the source IP address (src) begins with 10, a range often used for private/internal networks. It helps pinpoint failed attempts such as blocked connections or unauthorized access attempts originating from within the internal network. The query organizes results into a table showing time, source IP, destination, user, and action, sorted so the most recent failures appear first. This is useful for quickly identifying suspicious internal network activity or misconfigurations affecting traffic flow.
 
-
+ ```
 index=mfirewall action=failure src="10*"
 | table _time src dest user action
 | sort -_time
-
+ ```
 
 
 
