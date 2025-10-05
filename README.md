@@ -6,7 +6,7 @@ This is a Splunk search query that looks for specific log events in your system 
   ```
 
 **Specific dest+files**
-
+This Splunk query searches across all indexes (index=*) to look for specific events. It filters results so only events where the file name matches any of the listed .lock files — like file1.lock, file2.lock, up to file7.lock and write.lock — are included. That’s what the (file_name="..." OR file_name="..." …) part does: it’s a list of conditions joined with “OR” so Splunk returns matches for any of them. The (dest="<>" OR dest="<>" OR dest="<>") part further filters the results to only include events where the destination (dest) matches one of those specific values (here represented as placeholders <>). The pipe symbol (|) sends the filtered results into the next step, which is table file_name file_path host process_exec app Computer, telling Splunk to display the results in a clean table containing those columns: file name, file path, host, process executed, app, and computer name. Essentially, this query is designed to track certain .lock files hitting specific destinations and present that information in an easy-to-read table.
   ```
   index=*  (file_name="file1.lock"  OR file_name="file2.lock" OR file_name="file3.lock" OR file_name="file4.lock" OR file_name="file5.lock" OR file_name="file6.lock" OR file_name="file7.lock" OR file_name="write.lock"  ) (dest="<>" OR dest="<>" OR dest="<>") | table file_name file_path host process_exec app Computer
   ```
