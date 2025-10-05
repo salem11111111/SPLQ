@@ -36,6 +36,7 @@ This Splunk query searches across all indexes (index=*) for log events from the 
   ```
 
 **See all similar events across all hosts**
+This Splunk query searches across all indexes (index=*) for events from the last 30 days (earliest=-30d latest=now). It specifically looks for events where the process path matches "C:\\Windows\\System32\\PING.EXE" (meaning the ping.exe program was run), the parent process path matches "C:\\Windows\\System32\\cmd.exe" (meaning the command was run from the Windows Command Prompt), and the parent process command line contains the phrase "GoogleUpdater*uninstall.cmd" (meaning it was triggered by a script related to Google Updater uninstall). The pipe (|) sends these results into a table command, which neatly organizes the data into columns: _time (when the event happened), host (the machine where it happened), user (the account that ran the process), process_name, process_path, process_parent_name, process_parent_path, and process_parent_command_line (the full command line of the parent process). Finally, | sort _time orders the results by time so they are shown from oldest to newest. This query is designed to identify and track specific instances where ping.exe is launched via a command prompt script related to GoogleUpdater uninstall processes — a potential security or troubleshooting use case.
 
   ```
   index=* earliest=-30d latest=now
