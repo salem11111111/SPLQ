@@ -60,11 +60,14 @@ index=""
 ```
 
 **Confirm indexes you're allowed to search**
+This Splunk query uses eventcount to quickly count how many events exist in your Splunk data. The index=* part tells Splunk to search across all indexes, meaning it will look at every dataset you have access to. The option summarize=false means Splunk will skip using any precomputed summaries and instead count events directly from the raw data, which is slower but more accurate and up-to-date. This command is useful when you want a quick overview of the number of events in your environment without applying any filters. It essentially gives you a raw total of events for each index, helping you understand the size and activity of your log data.
+
   ```
   | eventcount summarize=false index=*
   ```
 
 **Search for specific .exe unknown index/source/sourcetype**
+This Splunk query searches across three indexes — sysmon, wineventlog, and os (index=sysmon OR index=wineventlog OR index=os) — looking for any events that contain the text .exe, which usually indicates executable files being run on a system. The .exe filter is not field-specific, so Splunk searches for it anywhere in the raw event data. The pipe (|) sends the results to the table command, which organizes the output neatly into columns: _time (when the event happened), host (the machine that generated the event), source (the file or data source), sourcetype (type of data, such as logs from Sysmon or Windows events), and _raw (the full raw log entry). Finally, | sort -_time sorts the results in descending order by time, so the newest events appear first. This query is useful for tracking executable activity across multiple data sources in your environment.
   ```
   (index=sysmon OR index=wineventlog OR index=os)
   ".exe"
@@ -73,6 +76,7 @@ index=""
    ```
 
 **Status of host:**
+This Splunk query searches in a specific index called your_index (index=your_index) — which should be replaced with the actual index name where your data lives. The pipe (|) sends the results to the stats command, which summarizes data. Here, values(orig_host) as Hostnames tells Splunk to collect all unique values of the orig_host field (which usually represents the original hostname where the event came from) and display them under a new column called Hostnames. Essentially, this query gives you a simple list of all unique hostnames found in that index, making it useful for understanding which machines are generating events.
   ```
   index=your_index
   | stats values(orig_host) as Hostnames
@@ -82,12 +86,13 @@ index=""
   index=* (host="" OR host="" OR host="" OR host="")
   | table _time host orig_host src_ip dest_ip ComputerName
   ```
-
+This Splunk query uses the metadata command to gather summary information about all hosts in Splunk (type=hosts index=*). It starts by finding all host entries and then uses dedup host to keep only one entry per host. The eval current_time=now() command creates a field storing the current time, and eval timediff=round((current_time-lastTime)/60,2) calculates the time difference (in minutes) between now and the last time data was seen from each host. It then sets a threshold of 120 minutes and uses eval Current_status=if(timediff>threshold,"missed","active") to label each host as "active" or "missed" depending on whether it’s been longer than 120 minutes since the last log. The convert ctime(...) commands turn time fields into human-readable formats. It removes unnecessary fields with fields - type,recentTime,totalCount and then keeps only relevant columns with fields host,firstTime,lastTime,current_time,Current_status,timediff,threshold. It sorts the results so "missed" hosts appear first, renames timediff to timediff(m) for clarity, and finally uses search host="" OR host="" ... to filter for specific hosts (placeholders here). This query is designed to monitor host activity and flag hosts that haven’t reported data recently.
   ```
   | metadata type=hosts index=* | dedup host  | eval current_time=now()  | eval timediff=round((current_time-lastTime)/60,2) | eval threshold=120 | eval Current_status=if(timediff>threshold,"missed","active")  | convert ctime(lastTime), ctime(current_time), ctime(firstTime)  | fields - type,recentTime,totalCount  | fields host,firstTime,lastTime,current_time,,Current_status,timediff,threshold  | sort - Current_status,timediff  | rename timediff as timediff(m)  | search host="" OR host="" OR host="" OR host="" 
   ```
 
 **Excessive Logins**
+This Splunk query searches across all indexes (index=*) for events where the src field is empty (src="") and either signature_id=4776 (which relates to Windows authentication events) or action=success (indicating successful authentication attempts). It uses eval account_type=if(match(user, "\\$$"), "Machine Account", "Human Account") to classify accounts: if the username ends with a $, it’s considered a “Machine Account” (like a computer account), otherwise it’s a “Human Account.” The stats command groups results by src and calculates various summaries: the total number of events (count AS total_events), all action types seen (values(action)), the number of different actions (dc(action)), all destination systems (values(dest)), the count of unique destinations (dc(dest)), all account types (values(account_type)), all usernames involved (values(user)), the first time an event was seen (min(_time)), and the last time (max(_time)). The convert ctime(first_seen) ctime(last_seen) command turns those timestamps into human-readable dates, and sort -total_events lists results with the most active sources at the top. This query is useful for summarizing authentication activity from sources with missing IP information and detecting unusual patterns of logins across accounts.
   ```
   index=* src="" (signature_id=4776 OR action=success)
   | eval account_type=if(match(user, "\\$$"), "Machine Account", "Human Account")
@@ -107,6 +112,7 @@ index=""
   ```
 
 **Excessive Logins: Human/Machine**
+ This Splunk query searches across all indexes (index=*) for events where signature_id=4776 — a common ID for Windows authentication events — and where the source IP (src) is empty (src=""). This helps find authentication attempts that may be missing source information. The query then uses eval account_type=if(match(user,"\\$$"),"Machine","Human") to classify the account type: if the username ends with a $, it’s treated as a “Machine” account (like computer accounts), otherwise it’s treated as a “Human” account. Next, the stats command groups the results by user and account_type and calculates: the total number of events (count AS total_events), the number of successful logins (sum(eval(action="success")) AS success_count), the number of failed logins (sum(eval(action="failure")) AS failure_count), and all destination systems involved (values(dest) AS destinations). The eval success_count=coalesce(success_count,0) and eval failure_count=coalesce(failure_count,0) ensure missing values are replaced with 0 so the counts are always numbers. Finally, sort account_type organizes the results so that machine accounts and human accounts are grouped. This query is useful for tracking authentication activity and spotting unusual patterns in failed or successful logins.
 ```
   index=* signature_id=4776 src=""
   | eval account_type=if(match(user,"\\$$"),"Machine","Human")
@@ -122,6 +128,7 @@ index=""
   ```
 
 **RDP connection correlation**
+This Splunk query searches across all indexes (index=*) for Windows security events with EventCode values 4624, 4625, 4648, or 4672, which are all related to user logons and authentication attempts. The eval LogonType=case(...) part converts numeric logon type codes into meaningful labels (e.g., 10 becomes "RDP" for Remote Desktop logons, 2 becomes "Interactive" for direct logons). Then, | search LogonType="RDP" filters to only include Remote Desktop logons. Next, | search Account_Name IN ("user1","user2",...) restricts results to specific usernames. The stats command summarizes the data grouped by Account_Name, SourceHost, and DestinationHost, calculating: total login attempts (count AS TotalAttempts), the number of unique destination hosts (dc(DestinationHost)), all source hosts seen (values(SourceHost)), and the first and last times those logons happened. The eval Suspicious=if(...) adds a flag to mark entries as "Yes" if there are more than 5 attempts or if the logons happen outside of normal hours (before 8:00 AM or after 6:00 PM), otherwise "No". Finally, the table command neatly displays results with relevant columns, showing which accounts, sources, and destinations may have suspicious Remote Desktop activity.
   ```
   index=*
   (EventCode=4624 OR EventCode=4625 OR EventCode=4648 OR EventCode=4672)
