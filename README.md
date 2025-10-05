@@ -26,6 +26,7 @@ This Splunk query searches in the firewall index (index=firewall) and filters fo
   ```
 
 **Check if exact chain repeats for host**
+This Splunk query searches across all indexes (index=*) for log events from the last 30 days (earliest=-30d latest=now). It filters those events so they only include logs where the host field is empty (host=""), meaning there’s no host name recorded for the event. It further filters to only include events that contain both "ping.exe" and "cmd.exe" — looking for cases where both of these processes appear in the logs together, which can sometimes indicate unusual activity or scripted commands. The pipe (|) sends the results to the next step, table, which formats the output neatly into columns: _time (when the event occurred), user (the account running the process), process_name, process_path, parent_process_name, parent_process_path, and parent_command_line (details about the parent process and commands executed). Finally, | sort _time arranges the results in chronological order so you can review the events over time. This query is essentially designed to track potential suspicious command activity involving ping.exe and cmd.exe in the last month.
   ```
   index=* earliest=-30d latest=now
   host=""
