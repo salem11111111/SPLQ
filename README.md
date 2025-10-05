@@ -12,6 +12,7 @@ This Splunk query searches across all indexes (index=*) to look for specific eve
   ```
 
 **Count of failed auth attempts from each user**
+This Splunk query searches in the firewall index (index=firewall) to find log events related to authentication attempts. It filters for events where the authentication method (auth_method) is either LDAP or RADIUS — these are common protocols for validating user access. The pipe (|) sends the filtered events to the next step, which is a stats command. The stats command summarizes data: count gives the total number of matching events, values(action) as actions collects all unique actions taken and labels them as actions, and values(src) as src_ips collects all unique source IP addresses and labels them as src_ips. The by user part groups the results by each username so you can see, for each user, how many authentication events occurred, what actions were taken, and what source IPs were involved. In short, this query gives a concise summary of LDAP or RADIUS authentication activity grouped by user.
 ```
   index=firewall (auth_method=LDAP OR auth_method=RADIUS)
   | stats count values(action) as actions values(src) as src_ips by user
