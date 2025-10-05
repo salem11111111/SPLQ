@@ -1,5 +1,5 @@
-**.lock files**, any dest
-Searches Sysmon logs from the last 24 hours for .lock files, extracts the Windows username from the file path, and displays details about when and where those files were seen, along with the process and host information.
+**.lock files**, 
+This is a Splunk search query that looks for specific log events in your system data. It starts with index=sysmon, which tells Splunk to search in the sysmon index (a place where Sysmon logs are stored). The next part, file_name="*.lock", filters results to only show files whose names end in .lock. The earliest=-24h latest=now part limits the search to the last 24 hours. Then | rex field=file_path "C:\\\\Users\\\\(?<user>[^\\\\]+)\\\\" is using a regular expression to extract a piece of information — here, it looks inside the file path and pulls out the username from the Windows file path, storing it in a field called user. Finally, | table _time file_name file_path host process_exec app Computer user tells Splunk to show the results in a neat table containing those specific columns: the time of the event, file name, file path, host, process executed, app, computer name, and the extracted user. Essentially, it’s a way to search for .lock files in Sysmon logs from the past day and display useful details in an organized format.
   ```
   index=sysmon file_name="*.lock" earliest=-24h latest=now | rex field=file_path "C:\\\\Users\\\\(?<user>[^\\\\]+)\\\\"
   | table _time file_name file_path host process_exec app Computer user
