@@ -19,6 +19,7 @@ This Splunk query searches in the firewall index (index=firewall) to find log ev
 ```
 
 **Index ip/user**
+This Splunk query searches in the firewall index (index=firewall) and filters for events where the user field is empty (user=""). This means it’s looking for firewall logs where no username is recorded. The pipe (|) sends those results to the stats command, which summarizes the data. Specifically, count gives the total number of matching events, and by action auth_method src means the results will be grouped by the combination of action (what the firewall did, e.g., allow or deny), auth_method (the authentication method used), and src (the source IP address). The output is essentially a table that shows, for each combination of action, authentication method, and source IP, how many times it occurred — helping you spot patterns like repeated failed attempts or unusual activity with no associated username.
   ```
   index=firewall user=""
   | stats count by action auth_method src
